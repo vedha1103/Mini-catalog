@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <div class="auth-form">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <input type="email" name="email" placeholder="Email" required /><br />
+      <input type="password" name="password" placeholder="Password" required /><br />
+      <button type="submit">Login</button>
+    </form>
+    <p>
+      Don't have an account?
+      <a href="register.html">Register here</a>
+    </p>
+    <p id="error-msg"></p>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const response = await fetch('backend/login.php', {
+        method: 'POST',
+        body: form,
+      });
+
+      let result;
+      try {
+        result = await response.json();
+      } catch (err) {
+        console.error("Failed to parse response as JSON:", err);
+        document.getElementById('error-msg').innerText = 'Server error. Try again.';
+        return;
+      }
+
+      const msgElem = document.getElementById('error-msg');
+      console.log("Login response:", result); 
+
+      if (result.status === 'success') {
+        msgElem.style.color = 'green';
+        msgElem.innerText = 'Login successful! Redirecting...';
+        setTimeout(() => {
+          window.location.href = 'index.html'; 
+        }, 1000);
+      } else {
+        msgElem.style.color = 'red';
+        msgElem.innerText = result.message || 'Login failed. Please try again.';
+      }
+    };
+  </script>
+</body>
+</html>

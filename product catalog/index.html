@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mini Product Catalog</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Mini Catalog</h1>
+    <nav>
+      <a href="login.html" id="login-link">Login</a>
+      <a href="register.html" id="register-link">Register</a>
+      <a href="cart.html" class="cart-icon">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVhpzrK5X6KMnvnBQJKbFFThJfcWb2HN_86kWkSRiALLIN1W6XHv3ufa4nndXliFyVy8o&usqp=CAU" style="width: 35px; height: 30px;"/>
+        <span id="cart-count" style="position:absolute; background:rgb(156, 63, 63); color:white; border-radius:50%; padding:2px 6px; font-size:12px; margin-left:-10px; top: 20px;;">0</span>
+      </a>
+    </nav>
+  </header>
+
+  <main>
+    <div id="message" class="message-box"></div>
+    <div class="product-container" id="product-list">
+    </div>
+  </main>
+
+  <script>
+    let isLoggedIn = false;
+
+    async function checkSession() {
+      const res = await fetch('backend/check_session.php');
+      const data = await res.json();
+      isLoggedIn = data.loggedIn;
+      if (isLoggedIn) {
+        updateCartCount();
+      }
+    }
+
+    async function updateCartCount() {
+      const res = await fetch('backend/get_cart.php');
+      const cartItems = await res.json();
+      const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+      document.getElementById('cart-count').textContent = totalItems;
+    }
+
+    function showMessage(text, type = 'success') {
+      const msgBox = document.getElementById('message');
+      msgBox.textContent = text;
+      msgBox.className = `message-box ${type}`;
+      setTimeout(() => {
+        msgBox.textContent = '';
+        msgBox.className = 'message-box';
+      }, 3000);
+    }
+
+    async function buyNow(productId) {
+      if (!isLoggedIn) {
+        localStorage.setItem('pendingBuy', productId);
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const response = await fetch('backend/add_to_cart.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ product_id: productId })
+      });
+      const result = await response.json();
+      if (result.success) {
+        showMessage('Product added to cart!', 'success');
+        updateCartCount();
+      } else {
+        showMessage('Failed to add to cart', 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await checkSession();
+
+      const res = await fetch('backend/products.php');
+      const products = await res.json();
+      const list = document.getElementById('product-list');
+
+      if (products.length === 0) {
+        list.innerHTML = '<p>No products found.</p>';
+        return;
+      }
+
+      products.forEach(prod => {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <img src="${prod.image_url}" alt="${prod.name}">
+          <h3>${prod.name}</h3>
+          <p>${prod.description}</p>
+          <strong>₹${prod.price}</strong>
+          <button onclick="buyNow(${prod.id})">Buy Now</button>
+        `;
+        list.appendChild(card);
+      });
+
+      const pendingBuy = localStorage.getItem('pendingBuy');
+      if (isLoggedIn && pendingBuy) {
+        localStorage.removeItem('pendingBuy');
+        buyNow(parseInt(pendingBuy));
+      }
+    });
+  </script>
+</body>
+</html>

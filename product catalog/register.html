@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    .auth-form {
+      max-width: 400px;
+      margin: 50px auto;
+      padding: 30px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background-color: #c9c3c3;
+    }
+    .auth-form input, .auth-form button {
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #error-msg {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .login-link {
+      display: block;
+      text-align: center;
+      margin-top: 10px;
+      color: black;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-form">
+    <h2>Register</h2>
+    <form id="registerForm">
+      <input type="text" name="name" placeholder="Full Name" required /><br />
+      <input type="email" name="email" placeholder="Email" required /><br />
+      <input type="password" name="password" placeholder="Password" required /><br />
+      <button type="submit">Register</button>
+    </form>
+    <p id="error-msg"></p>
+    <a href="login.html" class="login-link">Already have an account? Login here</a>
+  </div>
+
+  <script>
+    document.getElementById('registerForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const response = await fetch('backend/register.php', {
+        method: 'POST',
+        body: form,
+      });
+      const result = await response.text();
+      if (result === 'success') {
+        window.location.href = 'login.html';
+      } else {
+        document.getElementById('error-msg').innerText = result;
+      }
+    };
+  </script>
+</body>
+</html>

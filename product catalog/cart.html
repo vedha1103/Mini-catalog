@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your Cart</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Your Cart</h1>
+    <nav>
+      <a href="index.html">← Back to Catalog</a>
+    </nav>
+  </header>
+
+  <main>
+    <div id="cart-message" class="message-box"></div>
+    <div class="cart-container" id="cart-items">
+      <p>Loading your cart...</p>
+    </div>
+    <div class="cart-total" id="cart-total"></div>
+  </main>
+
+  <script>
+    async function checkSession() {
+      const res = await fetch('backend/check_session.php');
+      const data = await res.json();
+      if (!data.loggedIn) {
+        window.location.href = 'login.html';
+      }
+    }
+
+    function showMessage(text, type = 'success') {
+      const msgBox = document.getElementById('cart-message');
+      msgBox.textContent = text;
+      msgBox.className = `message-box ${type}`;
+      setTimeout(() => {
+        msgBox.textContent = '';
+        msgBox.className = 'message-box';
+      }, 3000);
+    }
+
+    async function loadCart() {
+      const res = await fetch('backend/get_cart.php');
+      const items = await res.json();
+      const container = document.getElementById('cart-items');
+      const totalContainer = document.getElementById('cart-total');
+
+      container.innerHTML = '';
+      if (items.length === 0) {
+        container.innerHTML = '<p>Your cart is empty.</p>';
+        totalContainer.innerHTML = '';
+        return;
+      }
+
+      let total = 0;
+
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        const subtotal = item.quantity * item.price;
+        total += subtotal;
+
+        div.innerHTML = `
+          <img src="${item.image_url}" alt="${item.name}">
+          <div>
+            <h3>${item.name}</h3>
+            <p>Quantity: ${item.quantity}</p>
+            <p>Price: ₹${item.price}</p>
+            <p><strong>Subtotal: ₹${subtotal.toFixed(2)}</strong></p>
+            <button onclick="removeFromCart('${item.name}')">Remove</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      totalContainer.innerHTML = `<h3>Total: ₹${total.toFixed(2)}</h3>`;
+    }
+
+    async function removeFromCart(productName) {
+      const response = await fetch('backend/remove_from_cart.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_name: productName })
+      });
+      const result = await response.json();
+      if (result.success) {
+        showMessage('Product removed from cart!', 'success');
+        loadCart();
+      } else {
+        showMessage('Failed to remove item.', 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await checkSession();
+      await loadCart();
+    });
+  </script>
+</body>
+</html>
